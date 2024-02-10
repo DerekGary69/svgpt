@@ -105,7 +105,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // first we interpret the description into key features, each with their own layer and other details.
+        let enhanceDesc = 
+        `
+        You are working in a team. Your role is to enhance a text description of an image or scene and specify a few key details/features. These will each be given their own layer and design, and then combined to create the final image.
+        The description you will be given might already be extremely detailed or it might be very simple. Your job is to add more detail to the description. For example, if the description is "A small island with a sandy beach and a few palm trees." you could add more detail to the beach and the trees. You could specify the color of the sand, the shape of the trees, and the number of trees.
+        The reason it is important to add more detail to the description is that it allows the team to work on the image in parallel. Each team member can work on a different layer, and then the layers can be combined to create the final image.
+        The image will be rendered with SVG elements. So your response should be the features and their details, as well as how they could be rendered as an svg element.
+        `
+
+        let enhanceData = {
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "user",
+                    content: enhanceDesc
+                },
+                {
+                    role: "user",
+                    content: description
+                }
+            ]
+        };
+
+        // let enhanceResp;
+        // try {
+        //     console.log('enhancing description');
+        //     enhanceResp = await chatCall(apiKey, enhanceData);
+        //     console.log(enhanceResp);
+        // } catch (error) {
+        //     alert(error);
+        //     console.log(error);
+        //     setReady(true);
+        // }
 
         let interp = 
         `
@@ -114,20 +145,23 @@ document.addEventListener('DOMContentLoaded', () => {
         The reason it is important to break down a description is that it allows the team to work on the image in parallel. Each team member can work on a different layer, and then the layers can be combined to create the final image.
         All you need to do is interpret the description and specify the key features. You don't need to worry about the final image, just the key features. The final image will be created by another team member. 
         The description will be given in descriptive plain language. For example, "A small island with a sandy beach and a few palm trees."
-        So your response should be a JSON formatted string with the key features and their details, as well as how they could be rendered as an svg element. For example:
+        Never include spaces in the 'type' of the layers. For example, "palm trees" should be "palmtrees".
+        So your response should be a JSON formatted string with the key features and their details, as well as how they could be rendered as an svg element.
+        It is also important that these instructions specify explicitly how the elements are arranged in the image.
+        For example:
         {
-            "layers": [
+            layers: [
                 {
-                    "type": "background",
-                    "desc": "The ocean is the background of the map. It should be a rectangle that covers the entire map.",
+                    type: "background",
+                    desc: "The ocean is the background of the map. It should be a rectangle that covers the entire map. It should be blue. ",
                 },
                 {
-                    "type": "island",
-                    "desc": "The island is the main feature of the map. It should be a circle in the center of the map."
+                    type: "island",
+                    desc: "The island is the main feature of the map. It should be a circle. It should be in the center of the map. It should be yellow."
                 },
                 {
-                    "type": "trees",
-                    "desc": "There should be a few trees on the island. They should be green and cover the island. They should be circles."
+                    type: "trees",
+                    desc: "There should be a few trees on the island. They should be circles. They should be green. They should be in the center of the island."
                 }
             ]
         }
@@ -199,7 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         for (let layer of layers.layers) {
             let layerGroup = document.createElement('g');
-            layerGroup.setAttribute('id', layer.type);
+            let id = layer.type.replace(/\s/g, '-');
+            layerGroup.setAttribute('id', id);
             svgObject.appendChild(layerGroup);
 
             let layerData = {
@@ -252,11 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             legendElement.addEventListener('mouseover', function() {
                 let layerGroup = document.getElementById(legendElement.classList[0]);
-                layerGroup.style.filter = 'brightness(0.5)';
+                layerGroup.style.opacity = .5;
             });
             legendElement.addEventListener('mouseout', function() {
                 let layerGroup = document.getElementById(legendElement.classList[0]);
-                layerGroup.style.filter = 'brightness(1)';
+                layerGroup.style.opacity = 1;
+
             });
             console.log(legendElement.innerHTML);
         }
