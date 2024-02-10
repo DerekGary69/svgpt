@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="client.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <input type="text" id="description" placeholder="Enter a description of the map">
+    <button id="setDesc" class="readylisten">Set Description</button>
+    <input type="text" id="key" placeholder="Enter your OpenAI API key">
+    <button id="setKey" class="readylisten">Set OpenAI Key</button>
+    <button id="generate" class="readylisten">Generate SVG</button>
+    <div id="svgContainer">
+        <svg width="500px" height="500px" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="100%" height="100%" fill="green"></rect>
+            
+            <!-- River -->
+            <path d="M 660 0 C 540 250, 760 250, 660 500" fill="none" stroke="blue" stroke-width="20"></path>
+            
+            <!-- Hills -->
+            <path d="M 100 400 Q 200 200, 300 400" fill="darkgreen"></path>
+            <path d="M 100 400 Q 200 300, 300 400" fill="lightgreen"></path>
+            <path d="M 350 450 Q 400 300, 450 450" fill="lightgreen"></path>
+            <path d="M 150 200 Q 200 100, 250 200" fill="darkgreen"></path>        
+        </svg>
+    </div>
+    <button id="remix" class="readylisten hidden">Remix</button>
+</body>
+<style>
+    .busy {
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    /* Other styles */
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    input[type="text"] {
+        margin: 10px 0;
+        padding: 5px;
+        width: 300px;
+    }
+
+    button {
+        margin: 10px 0;
+        padding: 5px 10px;
+    }
+
+    #svgContainer {
+        margin-top: 20px;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .readylisten {
+        cursor: pointer;
+    }
+    
+</style>
+</html>
