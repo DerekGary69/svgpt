@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     The real map desciption is:
     `
 
-    let pword = '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'
 
 
     const genButton = document.getElementById('generate');
@@ -56,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let ready = false;
     setReady(true);
 
-    let apiKey = pword;
+    let apiKey = '';
     let description = '';
 
     document.getElementById('setDesc').addEventListener('click', () => {
@@ -98,9 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if(ready === false) return;
-        setReady(false);
-
-        
+        setReady(false); 
 
         if(apiKey === '') {
             alert('Please enter an OpenAI API key');
@@ -108,67 +105,255 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // let data1 = {
-        //     model: "gpt-3.5-turbo",
-        //     messages: [
-        //         {
-        //           role: "user",
-        //           content: "Given the following description of a landscape or image, decide on the key features that should be included in a simple SVG illustration that will use your output as a guide. Don't overdo it, as the capabilities are very limited. Be concise and stick to the description, but include some detail to give the SVG generator help. Do not include lighting information, sunlight, shadows or intangible atmospheric descriptions. Purely visual. Focus on key aspects, and suggest how the SVG agent could render each element with svg. A separate gpt agent will be used to generate the SVG from your output."
-        //         },
-        //         {
-        //             role: "user",
-        //             content: description
-        //         }
-        //     ]
-        // };
+        // first we interpret the description into key features, each with their own layer and other details.
 
-        // let layers;
-        // try {
-        //     layers = await chatCall(apiKey, data1);
-        //     console.log(layers);
-        // } catch (error) {
-        //     alert(error);
-        //     console.log(error);
-        //     setReady(true);
-        // }
+        let interp = 
+        `
+        You are working in a team. Your role is to interpret a text description of an image or scene and specify a few key details/features. These will each be given their own layer and design, and then combined to create the final image.
+        Even a simple prompt should be broken down into its key features. For example, a prompt about a beach should be broken down into the ocean, the beach, and the trees. Each of these should be given their own layer and design.
+        The reason it is important to break down a description is that it allows the team to work on the image in parallel. Each team member can work on a different layer, and then the layers can be combined to create the final image.
+        All you need to do is interpret the description and specify the key features. You don't need to worry about the final image, just the key features. The final image will be created by another team member. 
+        The description will be given in descriptive plain language. For example, "A small island with a sandy beach and a few palm trees."
+        So your response should be a JSON formatted string with the key features and their details, as well as how they could be rendered as an svg element. For example:
+        {
+            "layers": [
+                {
+                    "type": "background",
+                    "desc": "The ocean is the background of the map. It should be a rectangle that covers the entire map.",
+                },
+                {
+                    "type": "island",
+                    "desc": "The island is the main feature of the map. It should be a circle in the center of the map."
+                },
+                {
+                    "type": "trees",
+                    "desc": "There should be a few trees on the island. They should be green and cover the island. They should be circles."
+                }
+            ]
+        }
 
-        let data = {
+        Make sure to order the layers in the order they should be drawn. For example, the ocean should be the first layer, then the island, then the trees.
+        `
+
+        let interData = {
             model: "gpt-3.5-turbo",
             messages: [
                 {
-                  role: "system",
-                  content: "You are SVGPT. You create SVGs from text that resemble the description of the image. You respond only in formatted SVGs. You can use any SVG tags and attributes."
-                },
-                {
-                  role: "user",
-                  content: promptMsg
+                    role: "user",
+                    content: interp
                 },
                 {
                     role: "user",
                     content: description
-                },
-                // {
-                //     role: "user",
-                //     content: layers
-                // }
-              ]
+                }
+            ]
+            
         };
 
+        let interResp;
         try {
-            let responseData = await chatCall(apiKey, data);
-            let svg = responseData;
-            console.log(svg);
-            document.getElementById('svgContainer').innerHTML = '';
-            document.getElementById('svgContainer').innerHTML = svg;
-
-            remixBtn.classList.remove('hidden');
-
-            setReady(true);
+            console.log('interpreting description');
+            interResp = await chatCall(apiKey, interData);
+            console.log(interResp);
         } catch (error) {
             alert(error);
             console.log(error);
             setReady(true);
         }
+
+        let layers = JSON.parse(interResp);
+        console.log(layers);
+
+        // now we create the SVG based on the layers and their details. we increment through each layer and create an individual chat call for each one, then combine them into a single SVG:
+
+        let svg = 
+        `
+        You are working in a team.
+        You are SVGPT. You create SVG elements from text that resembles the description of the element.
+        You respond only in formatted SVGs. You can use any SVG tags and attributes.
+        You will focus on creating a single element, or aspect, of a larger image. You will be given a description of the element and you need to create an SVG that resembles the description.
+        Do not create a parent <svg> tag. Your SVG element will be combined with other elements to create the final image.
+        Parent tag: <svg width="500px" height="500px" xmlns="http://www.w3.org/2000/svg"></svg>
+        Example response:
+        "
+        <!-- Island -->
+        <circle cx="50%" cy="50%" r="40" fill="yellow"></circle>
+        "
+        Do not nest svg elements. You will be creating a single element, or aspect, of a larger image. The final image will be created by another team member.
+        Make sure to comment your code to indicate what the element is.
+        Make sure not to use % in path elements. Use absolute values.
+        `;
+
+        console.log('About to start loop. layers.length:', layers.layers.length);
+
+        let svgObject = document.createElement('svg');
+        svgObject.setAttribute('width', '500px');
+        svgObject.setAttribute('height', '500px');
+        svgObject.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        let legend = document.createElement('div');
+        legend.setAttribute('id', 'legend');
+        legend.innerHTML = '<h2>Legend</h2>';
+
+
+        
+        for (let layer of layers.layers) {
+            let layerGroup = document.createElement('g');
+            layerGroup.setAttribute('id', layer.type);
+            svgObject.appendChild(layerGroup);
+
+            let layerData = {
+                model: "gpt-3.5-turbo",
+                messages: [
+                    {
+                        role: "system",
+                        content: svg
+                    },
+                    {
+                        role: "user",
+                        content: JSON.stringify(layer.desc)
+                    },
+                    {
+                        role: "user",
+                        content: `Existing elements. Try to avoid overlapping elements: ${svgObject.outerHTML}`
+                    }
+                ]
+            };
+
+            console.log('layerData:', layerData)
+
+            try {
+                console.log('creating layer ' + layer.type);
+                let layerSvg = await chatCall(apiKey, layerData);
+                layer.svg = layerSvg;
+                layerGroup.innerHTML += layerSvg;
+                let legendElement = document.createElement('p');
+                legendElement.classList.add(layerGroup.id);
+                legendElement.draggable = true;
+                legendElement.innerHTML = `<strong>${layer.type}</strong>: ${layer.desc}`;
+                legend.appendChild(legendElement);
+                document.getElementById('legendContainer').innerHTML = '';
+                document.getElementById('legendContainer').appendChild(legend);
+                document.getElementById('svgContainer').innerHTML = '';
+                document.getElementById('svgContainer').innerHTML = svgObject.outerHTML;
+                console.log(svgObject.outerHTML);
+            } catch (error) {
+                alert(error);
+                console.log(error);
+                setReady(true);
+            }
+        }
+
+        console.log('layers:', layers);
+
+        
+        let legendElements = document.querySelectorAll('#legendContainer p');
+        for (let legendElement of legendElements) {
+            
+            legendElement.addEventListener('mouseover', function() {
+                let layerGroup = document.getElementById(legendElement.classList[0]);
+                layerGroup.style.filter = 'brightness(0.5)';
+            });
+            legendElement.addEventListener('mouseout', function() {
+                let layerGroup = document.getElementById(legendElement.classList[0]);
+                layerGroup.style.filter = 'brightness(1)';
+            });
+            console.log(legendElement.innerHTML);
+        }
+
+        let dragged;
+
+        // This will be called when the user starts dragging an element
+        document.addEventListener("dragstart", function(event) {
+            dragged = event.target;
+            // event.target.style.opacity = .5;
+        }, false);
+
+        // This will be called when a draggable element is dragged over another element
+        document.addEventListener("dragover", function(event) {
+            event.preventDefault();
+        }, false);
+
+        // This will be called when a draggable element is dropped on another element
+        document.addEventListener("drop", function(event) {
+            event.preventDefault();
+            if (event.target.parentNode.id == "legend") {
+                event.target.parentNode.insertBefore(dragged, event.target.nextSibling);
+                reorderSvgElements();
+            }
+            event.target.style.opacity = "";
+        }, false);
+
+        // This function reorders the SVG elements based on the order of the legend elements
+        function reorderSvgElements() {
+            let legendElements = document.querySelectorAll('#legend p');
+            for (let legendElement of legendElements) {
+                let svgElement = document.getElementById(legendElement.className);
+                svgElement.parentNode.appendChild(svgElement);
+            }
+        }
+
+
+
+
+
+    
+
+        // let finalSvg = document.createElement('svg');
+        // finalSvg.setAttribute('width', '500px');
+        // finalSvg.setAttribute('height', '500px');
+        // finalSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        // layers.layers.forEach((layer) => {
+        //     console.log('layersvg:', layer.svg);
+        //     finalSvg.innerHTML += layer.svg;
+        // });
+
+        // console.log('finalSvg:', finalSvg); 
+        
+
+        remixBtn.classList.remove('hidden');
+
+        setReady(true);
+
+
+        // let data = {
+        //     model: "gpt-3.5-turbo",
+        //     messages: [
+        //         {
+        //           role: "system",
+        //           content: "You are SVGPT. You create SVGs from text that resemble the description of the image. You respond only in formatted SVGs. You can use any SVG tags and attributes."
+        //         },
+        //         {
+        //           role: "user",
+        //           content: promptMsg
+        //         },
+        //         {
+        //             role: "user",
+        //             content: description
+        //         },
+        //         // {
+        //         //     role: "user",
+        //         //     content: layers
+        //         // }
+        //       ]
+        // };
+
+        // try {
+        //     let responseData = await chatCall(apiKey, data);
+        //     let svg = responseData;
+        //     console.log(svg);
+        //     document.getElementById('svgContainer').innerHTML = '';
+        //     document.getElementById('svgContainer').innerHTML = svg;
+
+        //     remixBtn.classList.remove('hidden');
+
+        //     setReady(true);
+        // } catch (error) {
+        //     alert(error);
+        //     console.log(error);
+        //     setReady(true);
+        // }
     });
     
     function setReady(bool) {

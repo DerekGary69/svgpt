@@ -26,6 +26,45 @@
             <path d="M 350 450 Q 400 300, 450 450" fill="lightgreen"></path>
             <path d="M 150 200 Q 200 100, 250 200" fill="darkgreen"></path>        
         </svg>
+        <svg width="500px" height="500px" xmlns="http://www.w3.org/2000/svg">
+
+            <!-- Ocean Background -->
+            <rect width="100%" height="100%" fill="blue"/>
+            
+            <!-- Sandy Beach -->
+            <path d="M100,250 L250,100 L400,250 L250,400 Z" fill="yellow" />
+            
+            <!-- Greenery and Palm Trees -->
+            <circle cx="180" cy="200" r="40" fill="green" />
+            <circle cx="320" cy="200" r="30" fill="green" />
+            <circle cx="180" cy="300" r="35" fill="green" />
+            <circle cx="320" cy="300" r="45" fill="green" />
+            
+        </svg>
+        <svg width="500px" height="500px" xmlns="http://www.w3.org/2000/svg">
+            <!-- Ocean Background -->
+            <rect width="100%" height="100%" fill="#0080FF"/>
+            <!-- Island -->
+            <path d="M 80 220 
+                     C 80 120, 420 120, 420 220
+                     Q 440 260, 420 300
+                     Q 320 380, 220 300
+                     Q 200 260, 220 220
+                     Z" fill="#FFD700"/>
+        </svg>
+    </div>
+    <div id="legendContainer">
+        <div id="legendContainer">
+            <div id="legend">
+                <h2>Legend</h2>
+                <p class="background"><strong>background</strong>: The ocean is the background of the image. It should be blue
+                    and cover the entire canvas.</p>
+                <p class="island"><strong>island</strong>: The island is the main feature of the image. It should have sandy
+                    beaches and a mountain in the center.</p>
+                <p class="trees"><strong>trees</strong>: There should be various types of trees covering the island. They should
+                    be green and scattered throughout.</p>
+            </div>
+        </div>
     </div>
     <button id="remix" class="readylisten hidden">Remix</button>
 </body>
@@ -61,6 +100,21 @@
 
     .readylisten {
         cursor: pointer;
+    }
+
+    svg > * {
+        filter: drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.7));
+    }
+
+    #legend p {
+        padding: 1em;
+        background-color: #f8f8f8;
+        border: 1px solid #e0e0e0;
+        border-radius: 1em;
+    }
+
+    #legend p:hover {
+        background-color: #f0f0f0;
     }
     
 </style>
